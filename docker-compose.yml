@@ -9,15 +9,12 @@ volumes:
   jobs_data:
 
 services:
-  # ---------------------------------------------------------------------------
-  # 1. BROKER DE MENSAGENS (RabbitMQ com Painel de Gerenciamento)
-  # ---------------------------------------------------------------------------
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # Porta de comunicação AMQP (API e Workers)
-      - "15672:15672" # Painel de Gerenciamento Web (http://localhost:15672)
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -31,16 +28,13 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------------------------------------------------------------------------
-  # 2. OBJECT STORAGE (MinIO)
-  # ---------------------------------------------------------------------------
   minio:
     image: quay.io/minio/minio
     container_name: minio
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000" # API S3
-      - "9001:9001" # Painel Web do MinIO (http://localhost:9001)
+      - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: password123
@@ -54,35 +48,29 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------------------------------------------------------------------------
-  # 3. SIMULADOR DE E-MAIL (Mailpit)
-  # ---------------------------------------------------------------------------
   mailpit:
-    image: axllent/mailpit
+    image: axllent/mailpit:latest
     container_name: mailpit
     ports:
-      - "1025:1025" # Servidor SMTP
-      - "8025:8025" # Webmail para visualizar notificações (http://localhost:8025)
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - conversor-net
 
-  # ---------------------------------------------------------------------------
-  # 4. API DE INGESTÃO (Producer)
-  # ---------------------------------------------------------------------------
   api:
     build:
       context: ./api
       dockerfile: Dockerfile
     container_name: api_ingestao
     ports:
-      - "8000:8000" # Interface/Endpoints HTTP
+      - "8000:8000"
     environment:
       - RABBITMQ_HOST=rabbitmq
       - MINIO_HOST=minio:9000
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password123
     volumes:
-      - jobs_data:/app/data # Compartilha o mesmo SQLite com os Workers
+      - jobs_data:/app/data
     networks:
       - conversor-net
     depends_on:
@@ -91,9 +79,6 @@ services:
       minio:
         condition: service_healthy
 
-  # ---------------------------------------------------------------------------
-  # 5. WORKER DE CONVERSÃO (Consumer)
-  # ---------------------------------------------------------------------------
   worker:
     build:
       context: ./worker
@@ -101,30 +86,28 @@ services:
     environment:
       - RABBITMQ_HOST=rabbitmq
       - MINIO_HOST=minio:9000
+      - MINIO_PUBLIC_HOST=localhost:9000
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password123
       - SMTP_HOST=mailpit
       - SMTP_PORT=1025
     volumes:
-      - jobs_data:/app/data # Lê e atualiza o estado dos jobs
+      - jobs_data:/app/data
     networks:
       - conversor-net
     deploy:
-      replicas: 2 # Sobe 2 instâncias paralelas para demonstrar escalabilidade horizontal
+      replicas: 4
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
         condition: service_healthy
 
-  # ---------------------------------------------------------------------------
-  # 6. FRONTEND (Interface Web Simples)
-  # ---------------------------------------------------------------------------
   frontend:
     image: nginx:alpine
     container_name: frontend
     ports:
-      - "8080:80" # Interface Web do Usuário (http://localhost:8080)
+      - "8080:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
     networks:

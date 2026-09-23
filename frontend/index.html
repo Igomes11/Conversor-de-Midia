@@ -5,123 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conversor Mídia Assíncrono</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #f4f7f6;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 550px;
-            padding: 30px;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            color: #1a202c;
-            text-align: center;
-        }
-
-        .section {
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .section:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            color: #4a5568;
-        }
-
-        input[type="file"],
-        input[type="email"],
-        input[type="text"],
-        select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input:focus, select:focus {
-            border-color: #3182ce;
-        }
-
-        button {
-            width: 100%;
-            background-color: #3182ce;
-            color: white;
-            border: none;
-            padding: 12px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: #2b6cb0;
-        }
-
-        .status-box {
-            background-color: #edf2f7;
-            border-left: 4px solid #cbd5e0;
-            padding: 15px;
-            border-radius: 4px;
-            margin-top: 15px;
-            display: none;
-        }
-
-        .status-PENDENTE { border-color: #ecc94b; background-color: #fefcbf; }
-        .status-PROCESSANDO { border-color: #4299e1; background-color: #ebf8ff; }
-        .status-CONCLUIDO { border-color: #48bb78; background-color: #f0fff4; }
-        .status-ERRO { border-color: #f56565; background-color: #fff5f5; }
-
-        .download-btn {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 8px 16px;
-            background-color: #48bb78;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .download-btn:hover {
-            background-color: #38a169;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { background: #ffffff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 550px; padding: 30px; }
+        h1 { font-size: 1.5rem; margin-bottom: 20px; color: #1a202c; text-align: center; }
+        .section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: #4a5568; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 15px; font-size: 0.95rem; outline: none; }
+        button { width: 100%; background-color: #3182ce; color: white; border: none; padding: 12px; font-size: 1rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        button:hover { background-color: #2b6cb0; }
+        
+        /* ESTILOS DA BARRA DE PROGRESSO */
+        .status-box { background-color: #edf2f7; border-left: 4px solid #cbd5e0; padding: 15px; border-radius: 4px; margin-top: 15px; display: none; }
+        .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 8px; height: 18px; margin: 10px 0; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background-color: #3182ce; transition: width 0.4s ease; text-align: center; color: white; font-size: 0.75rem; line-height: 18px; font-weight: bold; }
+        
+        .download-btn { display: inline-block; margin-top: 10px; padding: 8px 16px; background-color: #48bb78; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
@@ -129,7 +28,6 @@
 <div class="container">
     <h1>Conversor de Mídia Assíncrono</h1>
 
-    <!-- FORMULÁRIO DE UPLOAD -->
     <div class="section">
         <form id="uploadForm">
             <label for="file">Arquivo (Vídeo, Áudio ou Imagem):</label>
@@ -140,17 +38,14 @@
                 <optgroup label="Vídeo">
                     <option value="mp4">MP4</option>
                     <option value="avi">AVI</option>
-                    <option value="mkv">MKV</option>
                 </optgroup>
                 <optgroup label="Áudio">
                     <option value="mp3">MP3</option>
                     <option value="wav">WAV</option>
-                    <option value="aac">AAC</option>
                 </optgroup>
                 <optgroup label="Imagem">
                     <option value="jpg">JPG</option>
                     <option value="png">PNG</option>
-                    <option value="webp">WEBP</option>
                 </optgroup>
             </select>
 
@@ -161,7 +56,6 @@
         </form>
     </div>
 
-    <!-- CONSULTA E ACOMPANHAMENTO DE STATUS -->
     <div class="section">
         <label for="searchJobId">Consultar por Job ID:</label>
         <div style="display: flex; gap: 8px;">
@@ -172,7 +66,12 @@
         <div id="statusContainer" class="status-box">
             <p><strong>Job ID:</strong> <span id="lblJobId">-</span></p>
             <p><strong>Status:</strong> <span id="lblStatus">-</span></p>
-            <p id="msgRow" style="display: none; margin-top: 5px;"><strong>Detalhes:</strong> <span id="lblMsg">-</span></p>
+            
+            <!-- Barra de Progresso Visível -->
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar">0%</div>
+            </div>
+
             <div id="downloadContainer" style="display: none;">
                 <a id="btnDownload" href="#" target="_blank" class="download-btn">Baixar Arquivo Convertido</a>
             </div>
@@ -181,126 +80,66 @@
 </div>
 
 <script>
-    // URL base da API FastAPI (Mapeada via Docker ou Nginx)
     const API_URL = 'http://localhost:8000';
+    let eventSource = null;
 
     const uploadForm = document.getElementById('uploadForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const searchJobId = document.getElementById('searchJobId');
-    const searchBtn = document.getElementById('searchBtn');
-
     const statusContainer = document.getElementById('statusContainer');
     const lblJobId = document.getElementById('lblJobId');
     const lblStatus = document.getElementById('lblStatus');
-    const lblMsg = document.getElementById('lblMsg');
-    const msgRow = document.getElementById('msgRow');
+    const progressBar = document.getElementById('progressBar');
     const downloadContainer = document.getElementById('downloadContainer');
     const btnDownload = document.getElementById('btnDownload');
 
-    let pollInterval = null;
-
-    // --- Submissão do Formulário de Upload ---
     uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
         const fileInput = document.getElementById('file');
-        const targetFormat = document.getElementById('target_format').value;
-        const notifyEmail = document.getElementById('notify_email').value;
-
-        if (!fileInput.files[0]) return;
-
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
-        formData.append('target_format', targetFormat);
-        formData.append('notify_email', notifyEmail);
+        formData.append('target_format', document.getElementById('target_format').value);
+        formData.append('notify_email', document.getElementById('notify_email').value);
 
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'Enviando...';
-
-        try {
-            const response = await fetch(`${API_URL}/upload`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) throw new Error('Erro ao enviar o arquivo.');
-
-            const data = await response.json();
-            
-            // Limpa formulário
-            uploadForm.reset();
-            searchJobId.value = data.jobId;
-
-            // Inicia o acompanhamento
-            iniciarMonitoramento(data.jobId);
-
-        } catch (err) {
-            alert(`Erro: ${err.message}`);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Enviar para Conversão';
-        }
+        const response = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
+        const data = await response.json();
+        
+        document.getElementById('searchJobId').value = data.jobId;
+        conectarSSE(data.jobId);
     });
 
-    // --- Botão de Busca Manual ---
-    searchBtn.addEventListener('click', () => {
-        const jobId = searchJobId.value.trim();
-        if (jobId) {
-            iniciarMonitoramento(jobId);
-        }
+    document.getElementById('searchBtn').addEventListener('click', () => {
+        const jobId = document.getElementById('searchJobId').value.trim();
+        if (jobId) conectarSSE(jobId);
     });
 
-    // --- Função para Atualizar a Interface com o Status do Job ---
-    async function consultarStatus(jobId) {
-        try {
-            const response = await fetch(`${API_URL}/jobs/${jobId}`);
-            if (!response.ok) {
-                if (response.status === 404) alert('Job ID não encontrado.');
-                pararMonitoramento();
-                return;
-            }
+    function conectarSSE(jobId) {
+        if (eventSource) eventSource.close();
 
-            const data = await response.json();
-            
-            statusContainer.style.display = 'block';
-            statusContainer.className = `status-box status-${data.status}`;
-            lblJobId.innerText = data.job_id;
+        statusContainer.style.display = 'block';
+        lblJobId.innerText = jobId;
+
+        // Abre a conexão Server-Sent Events (SSE)
+        eventSource = new EventSource(`${API_URL}/jobs/${jobId}/events`);
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
             lblStatus.innerText = data.status;
+            
+            const progress = data.progress || 0;
+            progressBar.style.width = `${progress}%`;
+            progressBar.innerText = `${progress}%`;
 
             if (data.status === 'CONCLUIDO') {
-                msgRow.style.display = 'none';
+                progressBar.style.width = '100%';
+                progressBar.innerText = '100%';
                 downloadContainer.style.display = 'block';
                 btnDownload.href = data.output_url;
-                pararMonitoramento();
+                eventSource.close();
             } else if (data.status === 'ERRO') {
-                msgRow.style.display = 'block';
-                lblMsg.innerText = data.error_message || 'Erro durante o processamento.';
-                downloadContainer.style.display = 'none';
-                pararMonitoramento();
-            } else {
-                msgRow.style.display = 'none';
-                downloadContainer.style.display = 'none';
+                progressBar.style.backgroundColor = '#f56565';
+                eventSource.close();
             }
-
-        } catch (err) {
-            console.error('Erro ao buscar status:', err);
-        }
-    }
-
-    function iniciarMonitoramento(jobId) {
-        pararMonitoramento();
-        consultarStatus(jobId);
-        // Atualiza a cada 2 segundos (Polling)
-        pollInterval = setInterval(() => consultarStatus(jobId), 2000);
-    }
-
-    function pararMonitoramento() {
-        if (pollInterval) {
-            clearInterval(pollInterval);
-            pollInterval = null;
-        }
+        };
     }
 </script>
-
 </body>
 </html>
