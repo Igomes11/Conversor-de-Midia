@@ -15,7 +15,11 @@
         button { width: 100%; background-color: #3182ce; color: white; border: none; padding: 12px; font-size: 1rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
         button:hover { background-color: #2b6cb0; }
         
-        /* ESTILOS DA BARRA DE PROGRESSO */
+        /* ABAS DE SELEÇÃO: ARQUIVO LOCAL OU LINK YOUTUBE */
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { background-color: #e2e8f0; color: #4a5568; padding: 10px; border-radius: 6px; font-size: 0.9rem; flex: 1; text-align: center; cursor: pointer; font-weight: bold; user-select: none; }
+        .tab-btn.active { background-color: #3182ce; color: white; }
+
         .status-box { background-color: #edf2f7; border-left: 4px solid #cbd5e0; padding: 15px; border-radius: 4px; margin-top: 15px; display: none; }
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 8px; height: 18px; margin: 10px 0; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background-color: #3182ce; transition: width 0.4s ease; text-align: center; color: white; font-size: 0.75rem; line-height: 18px; font-weight: bold; }
@@ -29,19 +33,34 @@
     <h1>Conversor de Mídia Assíncrono</h1>
 
     <div class="section">
+        <!-- BOTOES PARA ALTERNAR ENTRE ARQUIVO E YOUTUBE -->
+        <div class="tab-buttons">
+            <div id="tabFileBtn" class="tab-btn active" onclick="alternarAba('file')">Ficheiro Local</div>
+            <div id="tabYtBtn" class="tab-btn" onclick="alternarAba('youtube')">Link do YouTube</div>
+        </div>
+
         <form id="uploadForm">
-            <label for="file">Arquivo (Vídeo, Áudio ou Imagem):</label>
-            <input type="file" id="file" name="file" required>
+            <!-- CAMPO DE FICHEIRO LOCAL -->
+            <div id="groupFile">
+                <label for="file">Ficheiro (Vídeo, Áudio ou Imagem):</label>
+                <input type="file" id="file" name="file">
+            </div>
+
+            <!-- CAMPO DE LINK DO YOUTUBE -->
+            <div id="groupYt" style="display: none;">
+                <label for="youtube_url">URL do Vídeo do YouTube:</label>
+                <input type="url" id="youtube_url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
+            </div>
 
             <label for="target_format">Formato de Destino:</label>
             <select id="target_format" name="target_format" required>
-                <optgroup label="Vídeo">
-                    <option value="mp4">MP4</option>
-                    <option value="avi">AVI</option>
-                </optgroup>
                 <optgroup label="Áudio">
                     <option value="mp3">MP3</option>
                     <option value="wav">WAV</option>
+                </optgroup>
+                <optgroup label="Vídeo">
+                    <option value="mp4">MP4</option>
+                    <option value="avi">AVI</option>
                 </optgroup>
                 <optgroup label="Imagem">
                     <option value="jpg">JPG</option>
@@ -67,13 +86,12 @@
             <p><strong>Job ID:</strong> <span id="lblJobId">-</span></p>
             <p><strong>Status:</strong> <span id="lblStatus">-</span></p>
             
-            <!-- Barra de Progresso Visível -->
             <div class="progress-container">
                 <div id="progressBar" class="progress-bar">0%</div>
             </div>
 
             <div id="downloadContainer" style="display: none;">
-                <a id="btnDownload" href="#" target="_blank" class="download-btn">Baixar Arquivo Convertido</a>
+                <a id="btnDownload" href="#" target="_blank" class="download-btn">Baixar Ficheiro Convertido</a>
             </div>
         </div>
     </div>
@@ -81,29 +99,54 @@
 
 <script>
     const API_URL = 'http://localhost:8000';
+    let modoAtual = 'file';
     let eventSource = null;
 
-    const uploadForm = document.getElementById('uploadForm');
-    const statusContainer = document.getElementById('statusContainer');
-    const lblJobId = document.getElementById('lblJobId');
-    const lblStatus = document.getElementById('lblStatus');
-    const progressBar = document.getElementById('progressBar');
-    const downloadContainer = document.getElementById('downloadContainer');
-    const btnDownload = document.getElementById('btnDownload');
+    function alternarAba(modo) {
+        modoAtual = modo;
+        if (modo === 'file') {
+            document.getElementById('groupFile').style.display = 'block';
+            document.getElementById('groupYt').style.display = 'none';
+            document.getElementById('tabFileBtn').classList.add('active');
+            document.getElementById('tabYtBtn').classList.remove('active');
+        } else {
+            document.getElementById('groupFile').style.display = 'none';
+            document.getElementById('groupYt').style.display = 'block';
+            document.getElementById('tabYtBtn').classList.add('active');
+            document.getElementById('tabFileBtn').classList.remove('active');
+        }
+    }
 
-    uploadForm.addEventListener('submit', async (e) => {
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const fileInput = document.getElementById('file');
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        
+        if (modoAtual === 'file') {
+            const fileInput = document.getElementById('file');
+            if (!fileInput.files[0]) return alert('Selecione um ficheiro!');
+            formData.append('file', fileInput.files[0]);
+        } else {
+            const ytUrl = document.getElementById('youtube_url').value.trim();
+            if (!ytUrl) return alert('Insira a URL do YouTube!');
+            formData.append('youtube_url', ytUrl);
+        }
+
         formData.append('target_format', document.getElementById('target_format').value);
         formData.append('notify_email', document.getElementById('notify_email').value);
 
-        const response = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
-        const data = await response.json();
-        
-        document.getElementById('searchJobId').value = data.jobId;
-        conectarSSE(data.jobId);
+        try {
+            const response = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
+            const data = await response.json();
+            
+            if (response.ok) {
+                document.getElementById('searchJobId').value = data.jobId;
+                conectarSSE(data.jobId);
+            } else {
+                alert(`Erro: ${data.detail || 'Falha ao submeter pedido'}`);
+            }
+        } catch (err) {
+            alert('Não foi possível conectar à API.');
+        }
     });
 
     document.getElementById('searchBtn').addEventListener('click', () => {
@@ -114,10 +157,16 @@
     function conectarSSE(jobId) {
         if (eventSource) eventSource.close();
 
+        const statusContainer = document.getElementById('statusContainer');
+        const lblJobId = document.getElementById('lblJobId');
+        const lblStatus = document.getElementById('lblStatus');
+        const progressBar = document.getElementById('progressBar');
+        const downloadContainer = document.getElementById('downloadContainer');
+        const btnDownload = document.getElementById('btnDownload');
+
         statusContainer.style.display = 'block';
         lblJobId.innerText = jobId;
 
-        // Abre a conexão Server-Sent Events (SSE)
         eventSource = new EventSource(`${API_URL}/jobs/${jobId}/events`);
 
         eventSource.onmessage = (event) => {
