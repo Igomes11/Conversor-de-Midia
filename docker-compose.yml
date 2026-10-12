@@ -1,3 +1,4 @@
+version: '3.8'
 
 networks:
   conversor-net:
@@ -83,20 +84,26 @@ services:
     build:
       context: ./worker
       dockerfile: Dockerfile
+    scale: 4
+    deploy:
+      replicas: 4
     environment:
       - RABBITMQ_HOST=rabbitmq
       - MINIO_HOST=minio:9000
       - MINIO_PUBLIC_HOST=localhost:9000
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password123
+      
+      # --- CONFIGURAÇÕES DE E-MAIL ---
       - SMTP_HOST=mailpit
       - SMTP_PORT=1025
+      - SMTP_USER=
+      - SMTP_PASSWORD=
+      - SENDER_EMAIL=noreply@conversor.com
     volumes:
       - jobs_data:/app/data
     networks:
       - conversor-net
-    deploy:
-      replicas: 4
     depends_on:
       rabbitmq:
         condition: service_healthy
