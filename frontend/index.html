@@ -14,17 +14,37 @@
         input, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 15px; font-size: 0.95rem; outline: none; }
         button { width: 100%; background-color: #3182ce; color: white; border: none; padding: 12px; font-size: 1rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
         button:hover { background-color: #2b6cb0; }
-        
-        /* ABAS DE SELEÇÃO: ARQUIVO LOCAL OU LINK YOUTUBE */
-        .tab-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab-btn { background-color: #e2e8f0; color: #4a5568; padding: 10px; border-radius: 6px; font-size: 0.9rem; flex: 1; text-align: center; cursor: pointer; font-weight: bold; user-select: none; }
-        .tab-btn.active { background-color: #3182ce; color: white; }
 
         .status-box { background-color: #edf2f7; border-left: 4px solid #cbd5e0; padding: 15px; border-radius: 4px; margin-top: 15px; display: none; }
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 8px; height: 18px; margin: 10px 0; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background-color: #3182ce; transition: width 0.4s ease; text-align: center; color: white; font-size: 0.75rem; line-height: 18px; font-weight: bold; }
         
         .download-btn { display: inline-block; margin-top: 10px; padding: 8px 16px; background-color: #48bb78; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; text-align: center; }
+
+        /* ESTILOS DO MODAL DE ALERTA */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); display: flex;
+            justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-card {
+            background: #fff; padding: 25px; border-radius: 10px;
+            max-width: 420px; width: 90%; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-card { transform: translateY(0); }
+        .modal-icon { font-size: 2.5rem; margin-bottom: 10px; color: #e53e3e; }
+        .modal-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; color: #2d3748; }
+        .modal-body { font-size: 0.95rem; color: #718096; margin-bottom: 20px; line-height: 1.4; }
+        .modal-close-btn {
+            background-color: #e53e3e; color: white; border: none;
+            padding: 10px 20px; font-weight: bold; border-radius: 6px;
+            cursor: pointer; width: 100%;
+        }
+        .modal-close-btn:hover { background-color: #c53030; }
     </style>
 </head>
 <body>
@@ -33,24 +53,9 @@
     <h1>Conversor de Mídia Assíncrono</h1>
 
     <div class="section">
-        <!-- BOTOES PARA ALTERNAR ENTRE ARQUIVO E YOUTUBE -->
-        <div class="tab-buttons">
-            <div id="tabFileBtn" class="tab-btn active" onclick="alternarAba('file')">Ficheiro Local</div>
-            <div id="tabYtBtn" class="tab-btn" onclick="alternarAba('youtube')">Link do YouTube</div>
-        </div>
-
         <form id="uploadForm">
-            <!-- CAMPO DE FICHEIRO LOCAL -->
-            <div id="groupFile">
-                <label for="file">Ficheiro (Vídeo, Áudio ou Imagem):</label>
-                <input type="file" id="file" name="file">
-            </div>
-
-            <!-- CAMPO DE LINK DO YOUTUBE -->
-            <div id="groupYt" style="display: none;">
-                <label for="youtube_url">URL do Vídeo do YouTube:</label>
-                <input type="url" id="youtube_url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
-            </div>
+            <label for="file">Ficheiro (Vídeo, Áudio ou Imagem):</label>
+            <input type="file" id="file" name="file" required>
 
             <label for="target_format">Formato de Destino:</label>
             <select id="target_format" name="target_format" required>
@@ -97,41 +102,77 @@
     </div>
 </div>
 
+<!-- MODAL DE ALERTA DE CONVERSÃO INVÁLIDA -->
+<div id="alertModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-title">Conversão Incompatível</div>
+        <div id="modalMessage" class="modal-body">
+            Não é possível converter esta mídia para o formato selecionado.
+        </div>
+        <button type="button" class="modal-close-btn" onclick="fecharModal()">Entendi</button>
+    </div>
+</div>
+
 <script>
     const API_URL = 'http://localhost:8000';
-    let modoAtual = 'file';
     let eventSource = null;
 
-    function alternarAba(modo) {
-        modoAtual = modo;
-        if (modo === 'file') {
-            document.getElementById('groupFile').style.display = 'block';
-            document.getElementById('groupYt').style.display = 'none';
-            document.getElementById('tabFileBtn').classList.add('active');
-            document.getElementById('tabYtBtn').classList.remove('active');
-        } else {
-            document.getElementById('groupFile').style.display = 'none';
-            document.getElementById('groupYt').style.display = 'block';
-            document.getElementById('tabYtBtn').classList.add('active');
-            document.getElementById('tabFileBtn').classList.remove('active');
+    const CATEGORIAS = {
+        IMAGEM: ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'],
+        AUDIO: ['mp3', 'wav'],
+        VIDEO: ['mp4', 'avi', 'mkv', 'mov']
+    };
+
+    function exibirModal(mensagem) {
+        document.getElementById('modalMessage').innerText = mensagem;
+        document.getElementById('alertModal').classList.add('active');
+    }
+
+    function fecharModal() {
+        document.getElementById('alertModal').classList.remove('active');
+    }
+
+    function validarCompatibilidade(extensaoOrigem, formatoDestino) {
+        extensaoOrigem = extensaoOrigem.toLowerCase();
+        formatoDestino = formatoDestino.toLowerCase();
+
+        const eImagem = CATEGORIAS.IMAGEM.includes(extensaoOrigem);
+        const eAudio = CATEGORIAS.AUDIO.includes(extensaoOrigem);
+        const eVideo = CATEGORIAS.VIDEO.includes(extensaoOrigem);
+
+        const destinoImagem = CATEGORIAS.IMAGEM.includes(formatoDestino);
+        const destinoAudio = CATEGORIAS.AUDIO.includes(formatoDestino);
+        const destinoVideo = CATEGORIAS.VIDEO.includes(formatoDestino);
+
+        if (eImagem && (destinoAudio || destinoVideo)) {
+            return `Não é possível converter uma Imagem (.${extensaoOrigem.toUpperCase()}) em Áudio ou Vídeo (.${formatoDestino.toUpperCase()}). Selecione um formato de imagem como JPG ou PNG.`;
         }
+
+        if ((eAudio || eVideo) && destinoImagem) {
+            return `Não é possível converter uma Mídia de Áudio/Vídeo (.${extensaoOrigem.toUpperCase()}) para um formato de Imagem (.${formatoDestino.toUpperCase()}).`;
+        }
+
+        return null;
     }
 
     document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const formData = new FormData();
-        
-        if (modoAtual === 'file') {
-            const fileInput = document.getElementById('file');
-            if (!fileInput.files[0]) return alert('Selecione um ficheiro!');
-            formData.append('file', fileInput.files[0]);
-        } else {
-            const ytUrl = document.getElementById('youtube_url').value.trim();
-            if (!ytUrl) return alert('Insira a URL do YouTube!');
-            formData.append('youtube_url', ytUrl);
+        const fileInput = document.getElementById('file');
+        const targetFormat = document.getElementById('target_format').value;
+
+        if (!fileInput.files[0]) return exibirModal('Por favor, selecione um ficheiro local.');
+
+        const file = fileInput.files[0];
+        const extensao = file.name.split('.').pop();
+
+        const erroCompatibilidade = validarCompatibilidade(extensao, targetFormat);
+        if (erroCompatibilidade) {
+            return exibirModal(erroCompatibilidade);
         }
 
-        formData.append('target_format', document.getElementById('target_format').value);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('target_format', targetFormat);
         formData.append('notify_email', document.getElementById('notify_email').value);
 
         try {
@@ -142,10 +183,10 @@
                 document.getElementById('searchJobId').value = data.jobId;
                 conectarSSE(data.jobId);
             } else {
-                alert(`Erro: ${data.detail || 'Falha ao submeter pedido'}`);
+                exibirModal(`Erro na API: ${data.detail || 'Falha ao submeter pedido.'}`);
             }
         } catch (err) {
-            alert('Não foi possível conectar à API.');
+            exibirModal('Não foi possível conectar à API do servidor.');
         }
     });
 
