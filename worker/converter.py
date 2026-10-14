@@ -1,41 +1,57 @@
 import os
-import time
 import subprocess
 from PIL import Image
-from database import update_progress
 
+def converter_midia(input_path: str, output_path: str, target_format: str, callback_progresso=None):
+    # Garante conversão estrita do parâmetro para string minúscula
+    fmt_destino = str(target_format).lower().strip()
 
-def converter_midia(job_id: str, input_path: str, output_path: str, target_format: str):
-    """
-    Realiza a conversão de imagens com Pillow e vídeo/áudio com FFmpeg,
-    notificando a variação de progresso no SQLite.
-    """
-    target_format = target_format.lower().strip()
-    extensoes_imagem = {"jpg", "jpeg", "png", "webp", "bmp", "gif"}
+    if callback_progresso:
+        callback_progresso(10)
 
-    # Progresso inicial
-    update_progress(job_id, 25, "PROCESSANDO")
+    # 1. CONVERSÃO DE IMAGENS (Pillow)
+    if fmt_destino in ["jpg", "jpeg", "png", "webp", "bmp"]:
+        try:
+            with Image.open(input_path) as img:
+                if callback_progresso: callback_progresso(50)
+                
+            
+                if fmt_destino in ["jpg", "jpeg"] and img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                    
+                img.save(output_path)
+                if callback_progresso: callback_progresso(100)
+                return
+        except Exception as e:
+            raise RuntimeError(f"Erro ao converter imagem com Pillow: {e}")
 
-    # 1. Processamento de Imagem via Pillow
-    if target_format in extensoes_imagem:
-        time.sleep(1)  # Pausa estratégica para visualização da barra no frontend
-        update_progress(job_id, 65, "PROCESSANDO")
+    # 2. CONVERSÃO DE VÍDEO E ÁUDIO (FFmpeg)
+    if fmt_destino in ["mp4", "avi", "mp3", "wav"]:
+        try:
+            cmd = ["ffmpeg", "-y", "-i", input_path]
 
-        with Image.open(input_path) as img:
-            if target_format in {"jpg", "jpeg"} and img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
-            img.save(output_path)
+            if fmt_destino == "mp4":
+                cmd.extend(["-c:v", "libx264", "-preset", "fast", "-c:a", "aac"])
+            elif fmt_destino == "avi":
+                cmd.extend(["-c:v", "mpeg4", "-vtag", "xvid", "-qscale:v", "3", "-c:a", "mp3"])
+            elif fmt_destino == "mp3":
+                cmd.extend(["-vn", "-acodec", "libmp3lame", "-q:a", "2"])
+            elif fmt_destino == "wav":
+                cmd.extend(["-vn", "-acodec", "pcm_s16le"])
 
-        update_progress(job_id, 90, "PROCESSANDO")
-        return
+            cmd.append(output_path)
 
-    # 2. Processamento de Vídeo / Áudio via FFmpeg
-    update_progress(job_id, 50, "PROCESSANDO")
+            if callback_progresso: callback_progresso(40)
 
-    comando = ["ffmpeg", "-y", "-i", input_path, output_path]
-    processo = subprocess.run(comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    if processo.returncode != 0:
-        raise RuntimeError(f"Erro no FFmpeg: {processo.stderr}")
+            if process.returncode != 0:
+                raise RuntimeError(f"FFmpeg falhou com código {process.returncode}: {process.stderr[-300:]}")
 
-    update_progress(job_id, 90, "PROCESSANDO")
+            if callback_progresso: callback_progresso(100)
+            return
+
+        except Exception as e:
+            raise RuntimeError(f"Erro na conversão com FFmpeg: {e}")
+
+    raise ValueError(f"Formato de destino '{fmt_destino}' não suportado.")

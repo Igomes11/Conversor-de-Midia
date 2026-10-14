@@ -4,4 +4,3 @@ pika
 minio
 pillow
 python-multipart
-PIL
