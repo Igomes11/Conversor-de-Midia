@@ -98,7 +98,7 @@ async def upload_media(
     ext = file.filename.split(".")[-1].lower() if "." in file.filename else ""
     object_name = f"{job_id}.{ext}"
 
-    # 1. Salva arquivo bruto no MinIO (Bucket 'uploads')
+    # Salva arquivo bruto no MinIO (Bucket 'uploads')
     try:
         minio_client.put_object(
             BUCKET_UPLOADS,
@@ -113,7 +113,7 @@ async def upload_media(
 
     source_url = f"http://{MINIO_HOST}/{BUCKET_UPLOADS}/{object_name}"
 
-    # 2. Persiste estado inicial no SQLite
+    # Persiste estado inicial no SQLite
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
@@ -123,7 +123,7 @@ async def upload_media(
     conn.commit()
     conn.close()
 
-    # 3. Prepara o Payload em conformidade estrita com o Contrato do PDF
+    # Prepara o Payload em conformidade estrita com o Contrato do PDF
     payload = {
         "jobId": job_id,
         "sourceUrl": source_url,
@@ -135,7 +135,7 @@ async def upload_media(
         "attempt": 1
     }
 
-    # 4. Publica no RabbitMQ
+    # Publica no RabbitMQ
     try:
         connection, channel = get_rabbitmq_channel()
         channel.basic_publish(

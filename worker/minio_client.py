@@ -27,17 +27,17 @@ def inicializar_buckets_e_politicas():
     bucket_uploads = "uploads"
     bucket_converted = "converted"
 
-    # 1. Garantir que o bucket 'uploads' existe (Privado)
+    # Garantir que o bucket 'uploads' existe (Privado)
     if not client.bucket_exists(bucket_uploads):
         client.make_bucket(bucket_uploads)
         print(f"[✓] Bucket '{bucket_uploads}' criado com sucesso.")
 
-    # 2. Garantir que o bucket 'converted' existe
+    # Garantir que o bucket 'converted' existe
     if not client.bucket_exists(bucket_converted):
         client.make_bucket(bucket_converted)
         print(f"[✓] Bucket '{bucket_converted}' criado com sucesso.")
 
-    # 3. Definir a política de leitura pública para o bucket 'converted'
+    # Definir a política de leitura pública para o bucket 'converted'
     policy_public_read = {
         "Version": "2012-10-17",
         "Statement": [

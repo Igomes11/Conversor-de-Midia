@@ -94,7 +94,7 @@ services:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password123
       
-      # --- CONFIGURAÇÕES DE E-MAIL ---
+      # CONFIGURAÇÕES DE E-MAIL
       - SMTP_HOST=mailpit
       - SMTP_PORT=1025
       - SMTP_USER=

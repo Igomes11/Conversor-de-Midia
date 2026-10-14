@@ -86,7 +86,7 @@ def processar_mensagem(ch, method, properties, body):
 
         print(f"[*] [Worker] Iniciando Job {job_id} -> Formato Alvo: '{target_format}' (Tentativa {attempt})...")
 
-        # 1. Checagem de Idempotência
+        # Checagem de Idempotência
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("SELECT status FROM jobs WHERE job_id = ?", (job_id,))
@@ -98,10 +98,10 @@ def processar_mensagem(ch, method, properties, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        # 2. Atualiza estado para PROCESSANDO
+        # Atualiza estado para PROCESSANDO
         atualizar_job(job_id, status="PROCESSANDO", progress=10)
 
-        # 3. Download do arquivo fonte do MinIO bucket 'uploads'
+        # Download do arquivo fonte do MinIO bucket 'uploads'
         source_object_name = source_url.split("/")[-1]
         local_input_path = f"/tmp/{source_object_name}"
         local_output_path = f"/tmp/{job_id}.{target_format}"
@@ -109,7 +109,7 @@ def processar_mensagem(ch, method, properties, body):
         minio_client.fget_object(BUCKET_UPLOADS, source_object_name, local_input_path)
         atualizar_job(job_id, progress=30)
 
-        # 4. Executa Conversão
+        # Executa Conversão
         print(f"[*] [Worker] Convertendo {source_object_name} para {target_format}...")
         
         def callback_progresso(p):
@@ -120,7 +120,7 @@ def processar_mensagem(ch, method, properties, body):
         converter_midia(local_input_path, local_output_path, target_format, callback_progresso)
         atualizar_job(job_id, progress=85)
 
-        # 5. Upload do resultado para bucket 'converted'
+        # Upload do resultado para bucket 'converted'
         converted_object_name = f"{job_id}.{target_format}"
         minio_client.fput_object(
             BUCKET_CONVERTED,
@@ -131,18 +131,18 @@ def processar_mensagem(ch, method, properties, body):
         output_url = f"http://{MINIO_PUBLIC_HOST}/{BUCKET_CONVERTED}/{converted_object_name}"
         atualizar_job(job_id, progress=95)
 
-        # 6. Limpeza do arquivo original do bucket 'uploads' (RF05)
+        # Limpeza do arquivo original do bucket 'uploads'
         try:
             minio_client.remove_object(BUCKET_UPLOADS, source_object_name)
             print(f"[✓] Arquivo de origem {source_object_name} removido do bucket 'uploads'.")
         except Exception as e:
             print(f"[!] Aviso: Não foi possível remover o arquivo de origem: {e}")
 
-        # 7. Limpeza dos arquivos temporários locais
+        # Limpeza dos arquivos temporários locais
         if os.path.exists(local_input_path): os.remove(local_input_path)
         if os.path.exists(local_output_path): os.remove(local_output_path)
 
-        # 8. Notificação por E-mail (RF06)
+        # Notificação por E-mail 
         enviar_email_notificacao(notify_email, job_id, output_url)
 
         # 9. Conclusão com Sucesso

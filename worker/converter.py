@@ -9,7 +9,7 @@ def converter_midia(input_path: str, output_path: str, target_format: str, callb
     if callback_progresso:
         callback_progresso(10)
 
-    # 1. CONVERSÃO DE IMAGENS (Pillow)
+    # CONVERSÃO DE IMAGENS (Pillow)
     if fmt_destino in ["jpg", "jpeg", "png", "webp", "bmp"]:
         try:
             with Image.open(input_path) as img:
@@ -25,7 +25,7 @@ def converter_midia(input_path: str, output_path: str, target_format: str, callb
         except Exception as e:
             raise RuntimeError(f"Erro ao converter imagem com Pillow: {e}")
 
-    # 2. CONVERSÃO DE VÍDEO E ÁUDIO (FFmpeg)
+    # CONVERSÃO DE VÍDEO E ÁUDIO (FFmpeg)
     if fmt_destino in ["mp4", "avi", "mp3", "wav"]:
         try:
             cmd = ["ffmpeg", "-y", "-i", input_path]
